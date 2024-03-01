@@ -5,22 +5,27 @@
 
 class fish_context : public wild_context
 {
-	typedef struct fish_operand
-	{
-		bool is_found;			// 0 idea what this does
-		uint16_t operand_data;	// 0 idea what this does
-		uint16_t operand_info;	// 0 idea what this does
-	} fish_operand;
-
 public:
-	void clear();
+    fish_context() : initialized_push_pop_mnemonics(false),
+                     initialized_unary_mnemonics(false),
+                     initialized_binary_mnemonics(false) {}
 
-public:
-	fish_operand fish_operands[2];
-	
-	bool initialized_push_pop_mnemonics;
-	bool initialized_unary_mnemonics;
-	bool initialized_binary_mnemonics; // stupid ways of initializing and mocking. but ok.
+    void clear();
+
+    class FishOperand
+    {
+    public:
+        bool is_found;          // Still no idea what this is
+        uint16_t operand_data;  // Still no idea what this is
+        uint16_t operand_info;  // Still no idea what this is
+    };
+
+    FishOperand fish_operands[2];
+
+private:
+    bool initialized_push_pop_mnemonics;
+    bool initialized_unary_mnemonics;
+    bool initialized_binary_mnemonics;
 };
 
 #endif
