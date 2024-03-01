@@ -2,26 +2,22 @@
 #define FISH_HPP_
 
 #include "wild.hpp"
-
 #include "fish_context.hpp"
 #include "fish_handler.hpp"
 
-class fish : public wild<fish_handler>
+class Fish : public Wild<FishHandler>
 {
 public:
-	fish();
+    Fish() {}
 
-public:
-	bool is_signature(instruction_container& vm_entrance);
-	
+    bool isSignature(InstructionContainer& vmEntrance);
+    
 private:
-	bool parse_initial_handler(instruction_container& instructions);
-
-private:
-	bool update_argument_data();
+    bool parseInitialHandler(InstructionContainer& instructions);
+    bool updateArgumentData();
 
 private:
-	fish_context context;
+    FishContext context;
 };
 
 #endif
