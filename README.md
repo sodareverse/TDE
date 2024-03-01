@@ -2,7 +2,7 @@
 A devirtualization engine for Themida.
 
 # Information
-This engine is wrote to be a plugin for IDA 8.0.
+This engine is wrote to be a plugin for IDA.
 Supported FISH VMA versions: 2.2.5.0, 2.2.6.0, 2.2.7.0
 
 
