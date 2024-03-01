@@ -1,32 +1,24 @@
 #include "segment_copy.hpp"
-
 #include <idp.hpp>
 #include <segment.hpp>
 
-segment_copy::segment_copy(uint32_t start_address, uint32_t end_address)
-{
-	this->segment_info = std::make_pair(start_address, end_address);
-
-	this->segment_data.resize(end_address - start_address);
-	get_many_bytes(start_address, &this->segment_data[0], end_address - start_address);
+SegmentCopy::SegmentCopy(uint32_t startAddress, uint32_t endAddress) : segmentInfo(std::make_pair(startAddress, endAddress)) {
+    segmentData.resize(endAddress - startAddress);
+    get_many_bytes(startAddress, &segmentData[0], endAddress - startAddress);
 }
 
-uint32_t segment_copy::start() const
-{
-	return this->segment_info.first;
+uint32_t SegmentCopy::start() const {
+    return segmentInfo.first;
 }
 
-uint32_t segment_copy::end() const
-{
-	return this->segment_info.second;
+uint32_t SegmentCopy::end() const {
+    return segmentInfo.second;
 }
 
-uint32_t segment_copy::size() const
-{
-	return (this->end() - this->start());
+uint32_t SegmentCopy::size() const {
+    return (end() - start());
 }
 
-uint8_t* segment_copy::data(uint32_t offset)
-{
-	return (this->segment_data.data() + offset);
+uint8_t* SegmentCopy::data(uint32_t offset) {
+    return (segmentData.data() + offset);
 }
