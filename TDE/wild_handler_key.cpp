@@ -3,122 +3,111 @@
 
 #include <idp.hpp>
 
-wild_handler_key::wild_handler_key()
+wild_handler_key::wild_handler_key() :
+    id(0),
+    index(0),
+    mnemonic(UD_Inone),
+    operand(0),
+    type(UD_NONE),
+    size(UD_SIZE_NONE),
+    direct_key_parameter(false),
+    parameter(0)
 {
-	this->id = 0;
-	this->index = 0;
-
-	this->mnemonic = UD_Inone;
-	this->operand = 0;
-
-	this->type = UD_NONE;
-	this->size = UD_SIZE_NONE;
-
-	this->direct_key_parameter = false;
-	this->parameter = 0;
-
-	this->condition = [](wild_context const& context, wild_handler_key const& key) -> bool { return true; };
+    // Default condition: always true
+    this->condition = [](wild_context const& context, wild_handler_key const& key) -> bool { return true; };
 }
 
 bool wild_handler_key::perform(wild_context& context, uint32_t* data)
 {
-	if (this->condition(context, *this))
-	{
-		if (this->direct_key_parameter)
-		{
-			if (this->type != UD_OP_REG)
-			{
-				msg("[CodeDevirtualizer] Direct key param type != OPERAND_TYPE_REGISTER.\n");
-				return false;
-			}
+    // Check if the condition is met
+    if (this->condition(context, *this))
+    {
+        if (this->direct_key_parameter)
+        {
+            if (this->type != UD_OP_REG)
+            {
+                msg("Direct key parameter type is not OPERAND_TYPE_REGISTER.\n");
+                return false;
+            }
 
-			uint32_t source_key_data = 0;
+            // Get source key data
+            uint32_t source_key_data = 0;
+            if (!context.get_key(this->parameter, &source_key_data))
+            {
+                msg("Could not get key data from the source key.\n");
+                return false;
+            }
 
-			if (!context.get_key(this->parameter, &source_key_data))
-			{
-				msg("[CodeDevirtualizer] Could not get key data from source key.\n");
-				return false;
-			}
+            // Get destination key data
+            uint32_t destination_key_data = 0;
+            if (!context.get_key(this->id, &destination_key_data))
+            {
+                msg("Could not get key data from the destination key.\n");
+                return false;
+            }
 
-			uint32_t destination_key_data = 0;
+            // Emulate instruction
+            instruction::emulate(this->mnemonic, this->size, source_key_data, &destination_key_data);
 
-			if (!context.get_key(this->id, &destination_key_data))
-			{
-				msg("[CodeDevirtualizer] Could not get key data from destination key.\n");
-				return false;
-			}
+            // Set destination key data
+            if (!context.set_key(this->id, destination_key_data))
+            {
+                msg("Could not set key data for the destination key.\n");
+                return false;
+            }
+        }
+        else
+        {
+            // Get key data
+            uint32_t key_data = 0;
+            if (!context.get_key(this->id, &key_data))
+            {
+                msg("Could not get data from the key.\n");
+                return false;
+            }
 
-			instruction::emulate(this->mnemonic, this->size, source_key_data, &destination_key_data);
+            // Emulate instruction based on the operand type
+            if (this->operand > 0)
+            {
+                // Indirect key
+                if (this->type != UD_OP_REG)
+                {
+                    msg("Indirect key type is not OPERAND_TYPE_REGISTER.\n");
+                    return false;
+                }
+                instruction::emulate(this->mnemonic, this->size, key_data, data);
+            }
+            else if (this->type == UD_OP_IMM)
+            {
+                // Immediate value
+                instruction::emulate(this->mnemonic, this->size, this->parameter, &key_data);
+                // Set key data
+                if (!context.set_key(this->id, key_data))
+                {
+                    msg("Could not set data for the key.\n");
+                    return false;
+                }
+            }
+            else
+            {
+                // Accessor key
+                if (this->type != UD_OP_REG)
+                {
+                    msg("Accessor key type is not OPERAND_TYPE_REGISTER.\n");
+                    return false;
+                }
+                instruction::emulate(this->mnemonic, this->size, *data, &key_data);
+                // Set key data
+                if (!context.set_key(this->id, key_data))
+                {
+                    msg("Could not set data for the key.\n");
+                    return false;
+                }
+            }
+        }
+    }
 
-			if (!context.set_key(this->id, destination_key_data))
-			{
-				msg("[CodeDevirtualizer] Could not set key data for destination key.\n");
-				return false;
-			}
-		}
-		else if (this->operand > 0)
-		{
-			if (this->type != UD_OP_REG)
-			{
-				msg("[CodeDevirtualizer] Indirect key type != OPERAND_TYPE_REGISTER.\n");
-				return false;
-			}
-
-			uint32_t key_data = 0;
-
-			if (!context.get_key(this->id, &key_data))
-			{
-				msg("[CodeDevirtualizer] Could not get data from key.\n");
-				return false;
-			}
-
-			instruction::emulate(this->mnemonic, this->size, key_data, data);
-		}
-		else if (this->type == UD_OP_IMM)
-		{
-			uint32_t key_data = 0;
-
-			if (!context.get_key(this->id, &key_data))
-			{
-				msg("[CodeDevirtualizer] Could not get data from key.\n");
-				return false;
-			}
-
-			instruction::emulate(this->mnemonic, this->size, this->parameter, &key_data);
-
-			if (!context.set_key(this->id, key_data))
-			{
-				msg("[CodeDevirtualizer] Could not set data for key.\n");
-				return false;
-			}
-		}
-		else
-		{
-			if (this->type != UD_OP_REG)
-			{
-				msg("[CodeDevirtualizer] Accessor key type != OPERAND_TYPE_REGISTER.\n");
-				return false;
-			}
-
-			uint32_t key_data = 0;
-
-			if (!context.get_key(this->id, &key_data))
-			{
-				msg("[CodeDevirtualizer] Could not get data from key.\n");
-				return false;
-			}
-			
-			instruction::emulate(this->mnemonic, this->size, *data, &key_data);
-
-			if (!context.set_key(this->id, key_data))
-			{
-				msg("[CodeDevirtualizer] Could not set data for key.\n");
-				return false;
-			}
-		}
-	}
-
-	return true;
+    return true;
 }
 
 bool wild_handler_key::operator<(wild_handler_key const& key) const
